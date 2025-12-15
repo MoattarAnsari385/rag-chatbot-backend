@@ -83,6 +83,53 @@ async def query_endpoint(request: QueryRequest):
     logger.info(f"Received query request {request_id}: '{request.query[:50]}...'")
 
     try:
+        # Check if the query is a greeting
+        greeting_keywords = ["hello", "hi", "hey", "greetings", "good morning", "good afternoon", "good evening", "good night"]
+        query_lower = request.query.lower().strip()
+
+        # Check for greeting-like messages
+        is_greeting = any(keyword in query_lower for keyword in greeting_keywords) or query_lower in ["hello", "hi", "hey"]
+
+        if is_greeting:
+            # Return a friendly greeting response without using the RAG system
+            import random
+            greeting_responses = [
+                "Hello! I'm your AI assistant for the Physical AI & Humanoid Robotics textbook. How can I help you with your studies today?",
+                "Hi there! I'm here to help you with the Physical AI & Humanoid Robotics curriculum. What would you like to learn about?",
+                "Greetings! I'm your AI tutor for Physical AI & Humanoid Robotics. Ask me anything about the textbook content!",
+                "Hello! I'm ready to help you explore the Physical AI & Humanoid Robotics textbook. What topic would you like to discuss?"
+            ]
+            greeting_answer = random.choice(greeting_responses)
+
+            # Calculate processing time
+            processing_time = time.time() - start_time
+
+            # Create successful response for greeting
+            token_usage = TokenUsage(
+                input_tokens=len(request.query.split()),  # Approximate
+                output_tokens=len(greeting_answer.split()),  # Approximate
+                total_tokens=len(request.query.split()) + len(greeting_answer.split())  # Approximate
+            )
+
+            agent_response = AgentResponse(
+                answer=greeting_answer,
+                sources=[],
+                confidence=1.0,  # High confidence for greeting responses
+                processing_time=processing_time,
+                tokens_used=token_usage,
+                timestamp=time.time()
+            )
+
+            success_response = QueryResponse(
+                success=True,
+                data=agent_response,
+                error=None,
+                request_id=request_id
+            )
+
+            logger.info(f"Greeting request {request_id} completed successfully in {processing_time:.2f}s")
+            return success_response
+
         # Validate the request parameters
         if not request.query or not request.query.strip():
             error_response = QueryResponse(
